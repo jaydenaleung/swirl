@@ -1,4 +1,4 @@
-int diameter = 5;
+int diameter = 50;
 
 // Physics calculations
 boolean isColliding(Particle a, Particle b) {
@@ -42,7 +42,7 @@ class Particle {
   }
 
   // method checking if colliding by coords, if yes, then set colliding to true and vice versa
-  void checkCollision() {
+  void checkCollision(Particle[] particles) {
     collidingWith.clear();
     for (int i = 0; i < particles.length; i++) {
       Particle pInQuestion = particles[i]; // the particle we're checking if it's colliding with our current particle
@@ -76,18 +76,27 @@ class Particle {
 
 Particle[] particles = new Particle[250000];
 
-void initParticles() {
-  for (int i = 0; i < 250000; i++) {
+void initParticles(Particle[] particles) {
+  for (int i = 0; i < particles.length; i++) {
     Particle p = new Particle();
     particles[i] = p;
   }
 }
 
-void masterUpdate() {
+void drawParticles(Particle[] particles) {
+  for (int i = 0; i < particles.length; i++) {
+    Particle p = particles[i];
+    stroke(p.col); // used for point(), instead of using fill()
+    strokeWeight(p.d);
+    point(p.pos.x,p.pos.y);
+  }
+}
+
+void masterUpdate(Particle[] particles) {
 // update all positions according to the vector, then redraw all circles according to the list
   for (int i = 0; i < particles.length; i++) {
     Particle p = particles[i];
-    p.checkCollision();
+    p.checkCollision(particles);
   }
   for (int i = 0; i < particles.length; i++) {
     Particle p = particles[i];
@@ -96,15 +105,24 @@ void masterUpdate() {
 }
 
 ///////////////////////
+Particle tp1 = new Particle();
+Particle tp2 = new Particle();
+Particle[] testParticles = {tp1, tp2};
 
 void setup() {
   size(500, 500);
   frameRate(60);
 
-  initParticles();
+  noSmooth();
+  noStroke();
+  strokeCap(ROUND); // points seem round (use PROJECT for square)
+
+  initParticles(testParticles);
+  drawParticles(testParticles);
 }
 
 void draw() {
   background(255);
-  masterUpdate();
+  masterUpdate(testParticles);
+  drawParticles(testParticles);
 }

@@ -12,7 +12,7 @@ Description: This program generates art using Perlin noise to create a swirl eff
 // Global variables
 int x = 0;
 int y = 0;
-int d = 5; // diameter
+int d = 1; // diameter
 
 // set paramters for 2D Perlin noise, generate random initial seeds for RGB values
 float scale = 0.01;
