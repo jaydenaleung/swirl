@@ -27,7 +27,9 @@ Particle mp = new Particle(n); // make a Particle at a mouse and put in random i
 
 // Physics calculations
 boolean isColliding(Particle a, Particle b) {
-  return dist(a.pos.x,a.pos.y,b.pos.x,b.pos.y) < diameter;
+  float dx = b.pos.x-a.pos.x; // x diff between a and b
+  float dy = b.pos.y-a.pos.y;
+  return dx*dx+dy*dy < diameter*diameter; // pythagorean theorem without sqrt()
 }
 
 PVector[] computeCollisionVector(PVector p1, PVector v1, PVector p2, PVector v2) {
@@ -251,4 +253,5 @@ void draw() {
   friction(particles);
   preventOutOfBounds(particles); // may remove later
   drawParticles(particles);
+  print(frameRate);
 }
