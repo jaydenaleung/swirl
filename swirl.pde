@@ -8,6 +8,7 @@ Description: This program generates art using Perlin noise to create a swirl eff
 
 */
 
+
 float diameter = 1.0;
 float radius = diameter/2.0;
 
@@ -24,6 +25,32 @@ boolean smooth = false; // Perlin noise generation uses a third dimension t whic
 
 Particle[] particles = new Particle[n+1]; // +1 for mouse particle
 Particle mp = new Particle(n); // make a Particle at a mouse and put in random index
+
+ArrayList<Particle>[][] grid;
+int colSize,rowSize;
+int cols = 10; // incremented by 2 later
+int rows = 10; // incremented by 2 later
+
+// Gridding - allows collisionCheck with only the particles in the main particle's box and the ones surrounding that box
+// Make grid of rows and columns as a 2D ArrayList, rows and columns are the height and width divided by 10. Then - Compute which particles are in which box at the start of each loop function and at the start of setup() but after initParticles. 
+void initGrid() {
+  grid = new ArrayList[cols][rows];
+  for (int i = 0; i < cols; i++) {
+    for (int j = 0; j < rows; j++) {
+      grid[i][j] = new ArrayList<Particle>();
+    }
+  }
+}
+
+void assignGrid(Particle[] particles) {
+  for (int i = 0; i < particles.length; i++) {
+    Particle p = particles[i];
+    int cx = (int)(p.pos.x/colSize); // particle's column index - the first column is 0, the second is 1, etc.
+    int cy = (int)(p.pos.y/rowSize);
+
+    grid[cx][cy].add(p);
+  }
+}
 
 // Physics calculations
 boolean isColliding(Particle a, Particle b) {
@@ -117,12 +144,27 @@ class Particle {
   }
 
   // method checking if colliding by coords, if yes, then set colliding to true and vice versa
-  void checkCollision(Particle[] particles) {
+  void checkCollision() {
     collidingWith.clear();
-    for (int i = 0; i < particles.length; i++) {
-      Particle pInQuestion = particles[i]; // the particle we're checking if it's colliding with our current particle
-      if (pInQuestion != this && isColliding(this, pInQuestion)) {
-        collidingWith.add(pInQuestion);
+
+    // Retrieve the column and row of the particle in the grid mathematically instead of using .indexOf - which is more computationally intensive
+    int cx = (int)(this.pos.x/colSize); // particle's column index - the first column is 0, the second is 1, etc.
+    int cy = (int)(this.pos.y/rowSize);
+
+    int[][] boxes = {{cx,cy},{cx-1,cy-1},{cx,cy-1},{cx+1,cy-1},{cx-1,cy},{cx+1,cy},{cx-1,cy+1},{cx,cy+1},{cx+1,cy+1}}; // 3x3 grid around the particle's box (note: this array doesn't strictly store boxes; it store their x and y box indices)
+
+    for (int i = 0; i < boxes.length; i++) {
+      int boxXInQuestion = boxes[i][0];
+      int boxYInQuestion = boxes[i][1];
+
+      if (boxXInQuestion >= 0 && boxXInQuestion < cols && boxYInQuestion >= 0 && boxYInQuestion < rows) { // prevents array index out of range
+        for (int j = 0; j < grid[boxXInQuestion][boxYInQuestion].size(); j++) {
+          Particle pInQuestion = grid[boxXInQuestion][boxYInQuestion].get(j); // the particle we're checking if it's colliding with our current particle
+
+          if (pInQuestion != this && isColliding(this, pInQuestion)) {
+            collidingWith.add(pInQuestion);
+          }
+        }
       }
     }
     if (collidingWith.size() > 0) { colliding = true; } else { colliding = false; }
@@ -189,6 +231,8 @@ void drawParticles(Particle[] particles) {
 }
 
 void masterUpdate(Particle[] particles) {
+  assignGrid(particles); // rebuild the grid
+  
   // update mp.pos and mp.vel before calculating collisions
   mp.ppos = mp.pos.copy();
   mp.pos = new PVector(mouseX, mouseY);
@@ -199,7 +243,7 @@ void masterUpdate(Particle[] particles) {
   // update all positions according to the vector, then redraw all circles according to the list
   for (int i = 0; i < particles.length; i++) {
     Particle p = particles[i];
-    p.checkCollision(particles);
+    p.checkCollision();
   }
   for (int i = 0; i < particles.length; i++) {
     Particle p = particles[i];
@@ -242,7 +286,14 @@ void setup() {
   noStroke();
   strokeCap(ROUND); // points seem round (use PROJECT for square)
 
+  colSize = (int)width / cols;
+  rowSize = (int)height / rows;
+  cols += 2; // increment to account for the remainder of colSize and rowSize being truncated
+  rows += 2;
+
   initParticles(particles);
+  initGrid();
+  assignGrid(particles);
   // randomizeVelocity(particles); // may remove later
   drawParticles(particles);
 }
