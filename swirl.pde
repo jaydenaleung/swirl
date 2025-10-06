@@ -11,13 +11,13 @@ NOTES FOR THE USER:
 - You may notice that the FPS is quite low (about 18 fps). This is a natural response for a larger canvas, but because the swirling is slow, the effects of the low frame rate is not very noticeable.
 - The small canvas size is also intentional. This is both to keep the FPS high enough and to keep the diameter low so the swirling doesn't become too beady. (If the diameter is kept low in a large canvas, the canvas will take a long time to fill with particles initially. Increasing the number of particles will drastically reduce FPS.)
 - The previous note also explains why there are white dots initially. While they can be removed, I think it provides a nice effect.
+- There are a few toggle options such as enableSortedSpawning that changes the way the canvas looks.
 
 */
 
 /*
 
 Possible Extensions of This Project, If I Had More Time:
-- Add instructions for the user on how to swirl.
 - Add rotational momentum other than just linear from oblique collisions
 - Increase efficiency even more to increase maximum screen size and particle count
 - Add other modes or the ability to add paint in.
@@ -25,7 +25,7 @@ Possible Extensions of This Project, If I Had More Time:
 */
 
 
-float diameter = 1.8;
+float diameter = 2.0;
 float radius = diameter/2.0;
 
 int n = 8000; // # of particles
@@ -47,6 +47,10 @@ ArrayList<Particle>[][] grid;
 int colSize,rowSize;
 int cols = 10; // incremented by 2 later
 int rows = 10; // incremented by 2 later
+
+float textSize;
+
+float b = 1.010; // friction coefficient - divides the velocity of each particle by this every frame
 
 
 // Gridding - allows collisionCheck with only the particles in the main particle's box and the ones surrounding that box
@@ -296,7 +300,7 @@ void masterUpdate(Particle[] particles) {
   }
 }
 
-// Temporary functions
+// Auxiliary functions
 void preventOutOfBounds(Particle[] particles) {
   for (int i = 0; i < particles.length; i++) {
     if ((particles[i].pos.x-radius)+leak < 0 || (particles[i].pos.x+radius)-leak > width) {
@@ -316,14 +320,30 @@ void randomizeVelocity(Particle[] particles) {
 
 void friction(Particle[] particles) {
   for (int i = 0; i < particles.length; i++) {
-    particles[i].vel.div(1.015); // a good balance between friction and ability to move. Can be thought of as the "viscosity" of the "paint". Slows each particle down every frame.
+    particles[i].vel.div(b); // a good balance between friction and ability to move. Can be thought of as the "viscosity" of the "paint". Slows each particle down every frame.
   }
 }
+
+void renderInstructions() {
+  float x = 10;
+  float y = height-textSize-15;
+  float w = textWidth("Click and drag the mouse"); // max text width
+  float h = textSize*2+5;
+
+  float a = 255-(millis()/10-500); // after 5 seconds, fade out the text background
+  
+  noStroke();
+  fill(255,constrain(a,0,255));
+  rect(x-5,y-18,w+10,h+8,3); // offset from text position to create a rounded text box background
+  fill(0);
+  text("Click and drag the mouse\nto create a color swirl.", x, y); // instructions (text wrapped)
+}
+
 
 ///////////////////////
 
 void setup() {
-  size(200, 200, P2D); // P2D activates GPU renderer
+  size(250, 250, P2D); // P2D activates GPU renderer
   frameRate(60);
 
   // noSmooth();
@@ -338,6 +358,10 @@ void setup() {
 
   background(255);
 
+  textSize = height/15;
+  fill(0); // black text
+  textSize(textSize);
+
   initParticles(particles);
   initGrid();
   assignGrid(particles);
@@ -351,5 +375,8 @@ void draw() {
   friction(particles);
   preventOutOfBounds(particles); // may remove later
   drawParticles(particles);
+
+  renderInstructions();
+  
   print(frameRate);
 }
