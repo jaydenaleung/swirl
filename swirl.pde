@@ -6,10 +6,25 @@ Date: September 17, 2025
 Name: Swirl
 Description: This program generates art using Perlin noise to create a swirl effect responding to mouse movement and position.
 
+NOTES FOR THE USER:
+- Test out different values for the diameter! (Only change the diameter, not the radius.) I've found 1.8 to be quite nice.
+- You may notice that the FPS is quite low (about 18 fps). This is a natural response for a larger canvas, but because the swirling is slow, the effects of the low frame rate is not very noticeable.
+- The small canvas size is also intentional. This is both to keep the FPS high enough and to keep the diameter low so the swirling doesn't become too beady. (If the diameter is kept low in a large canvas, the canvas will take a long time to fill with particles initially. Increasing the number of particles will drastically reduce FPS.)
+- The previous note also explains why there are white dots initially. While they can be removed, I think it provides a nice effect.
+
+*/
+
+/*
+
+Possible Extensions of This Project, If I Had More Time:
+- Add rotational momentum other than just linear from oblique collisions
+- Increase efficiency even more to increase maximum screen size and particle count
+- Add other modes or the ability to add paint in.
+
 */
 
 
-float diameter = 1.0;
+float diameter = 1.8;
 float radius = diameter/2.0;
 
 int n = 10000; // # of particles
@@ -19,17 +34,19 @@ float rOffX = random(1000); float rOffY = random(1000); float rScale = random(0.
 float gOffX = random(1000); float gOffY = random(1000); float gScale = random(0.005, 0.02);
 float bOffX = random(1000); float bOffY = random(1000); float bScale = random(0.005, 0.02);
 
-float leak = 2.0; // how far outside the screen the particles can go before bouncing back
+float leak = 10.0; // how far outside the screen the particles can go before bouncing back
 boolean enableSortedSpawning = false; // particles are generated in neat rows. Set true by default for color field generation. Set false for debugging or randomizing colors.
 boolean smooth = false; // Perlin noise generation uses a third dimension t which makes the changing of the color smoother
 
 Particle[] particles = new Particle[n+1]; // +1 for mouse particle
 Particle mp = new Particle(n); // make a Particle at a mouse and put in random index
+color[] initialColors;
 
 ArrayList<Particle>[][] grid;
 int colSize,rowSize;
 int cols = 10; // incremented by 2 later
 int rows = 10; // incremented by 2 later
+
 
 // Gridding - allows collisionCheck with only the particles in the main particle's box and the ones surrounding that box
 // Make grid of rows and columns as a 2D ArrayList, rows and columns are the height and width divided by 10. Then - Compute which particles are in which box at the start of each loop function and at the start of setup() but after initParticles. 
@@ -42,11 +59,19 @@ void initGrid() {
   }
 }
 
+void clearGrid() {
+  for (int i = 0; i < cols; i++) {
+    for (int j = 0; j < rows; j++) {
+      grid[i][j].clear();
+    }
+  }
+}
+
 void assignGrid(Particle[] particles) {
   for (int i = 0; i < particles.length; i++) {
     Particle p = particles[i];
-    int cx = (int)(p.pos.x/colSize); // particle's column index - the first column is 0, the second is 1, etc.
-    int cy = (int)(p.pos.y/rowSize);
+    int cx = (int)(constrain(p.pos.x,0,width)/colSize); // particle's column index - the first column is 0, the second is 1, etc.
+    int cy = (int)(constrain(p.pos.y,0,width)/rowSize);
 
     grid[cx][cy].add(p);
   }
@@ -219,26 +244,44 @@ void initParticles(Particle[] particles) {
   mp.col = color(0, 0, 0, 0);
   // mp.d = 1;
   particles[n] = mp; // add to array
+
+  loadPixels();
+  initialColors = pixels.clone();
 }
 
 void drawParticles(Particle[] particles) {
   for (int i = 0; i < particles.length-1; i++) { // particles.length-1 prevents mouse particle from being drawn
     Particle p = particles[i];
+    
+    // If using points
     stroke(p.col); // used for point(), instead of using fill()
     strokeWeight(p.d);
     point(p.pos.x,p.pos.y);
+
+    // // If using circles
+    // fill(p.col); // used for point(), instead of using fill()
+    // circle(p.pos.x,p.pos.y,p.d);
   }
 }
 
+void drawBackground() {
+  loadPixels();
+  pixels = initialColors;
+  updatePixels();
+}
+
 void masterUpdate(Particle[] particles) {
+  clearGrid();
   assignGrid(particles); // rebuild the grid
   
-  // update mp.pos and mp.vel before calculating collisions
-  mp.ppos = mp.pos.copy();
-  mp.pos = new PVector(mouseX, mouseY);
+  if (mousePressed) {
+    // update mp.pos and mp.vel before calculating collisions
+    mp.ppos = mp.pos.copy();
+    mp.pos = new PVector(mouseX, mouseY);
 
-  PVector mv = PVector.sub(mp.pos,mp.ppos).div(5);
-  mp.vel = mv;
+    PVector mv = PVector.sub(mp.pos,mp.ppos).div(3);
+    mp.vel = mv;
+  }
 
   // update all positions according to the vector, then redraw all circles according to the list
   for (int i = 0; i < particles.length; i++) {
@@ -272,24 +315,27 @@ void randomizeVelocity(Particle[] particles) {
 
 void friction(Particle[] particles) {
   for (int i = 0; i < particles.length; i++) {
-    particles[i].vel.div(1.1);
+    particles[i].vel.div(1.015); // a good balance between friction and ability to move. Can be thought of as the "viscosity" of the "paint". Slows each particle down every frame.
   }
 }
 
 ///////////////////////
 
 void setup() {
-  size(88, 88, P2D); // P2D activates GPU renderer
+  size(200, 200, P2D); // P2D activates GPU renderer
   frameRate(60);
 
-  noSmooth();
+  // noSmooth();
   noStroke();
   strokeCap(ROUND); // points seem round (use PROJECT for square)
+  blendMode(BLEND);
 
   colSize = (int)width / cols;
   rowSize = (int)height / rows;
   cols += 2; // increment to account for the remainder of colSize and rowSize being truncated
   rows += 2;
+
+  background(255);
 
   initParticles(particles);
   initGrid();
@@ -299,7 +345,7 @@ void setup() {
 }
 
 void draw() {
-  background(255);
+  // drawBackground(); // might help with clearing white dots - but not when tested, so not used
   masterUpdate(particles);
   friction(particles);
   preventOutOfBounds(particles); // may remove later
