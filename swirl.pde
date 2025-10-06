@@ -17,6 +17,7 @@ NOTES FOR THE USER:
 /*
 
 Possible Extensions of This Project, If I Had More Time:
+- Add instructions for the user on how to swirl.
 - Add rotational momentum other than just linear from oblique collisions
 - Increase efficiency even more to increase maximum screen size and particle count
 - Add other modes or the ability to add paint in.
@@ -27,7 +28,7 @@ Possible Extensions of This Project, If I Had More Time:
 float diameter = 1.8;
 float radius = diameter/2.0;
 
-int n = 10000; // # of particles
+int n = 8000; // # of particles
 
 // per-channel offsets for RGB initial Perlin noise color generation
 float rOffX = random(1000); float rOffY = random(1000); float rScale = random(0.005, 0.02);
