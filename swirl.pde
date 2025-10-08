@@ -36,7 +36,7 @@ float gOffX = random(1000); float gOffY = random(1000); float gScale = random(0.
 float bOffX = random(1000); float bOffY = random(1000); float bScale = random(0.005, 0.02);
 
 float leak = 10.0; // how far outside the screen the particles can go before bouncing back
-boolean enableSortedSpawning = false; // particles are generated in neat rows. Set true by default for color field generation. Set false for debugging or randomizing colors.
+boolean enableSortedSpawning = false; // particles are generated in neat rows. Set true if you have as many particles as the screen can hold, if your computer has the resources to run it.
 boolean smooth = false; // Perlin noise generation uses a third dimension t which makes the changing of the color smoother
 
 Particle[] particles = new Particle[n+1]; // +1 for mouse particle
@@ -50,7 +50,7 @@ int rows = 10; // incremented by 2 later
 
 float textSize;
 
-float b = 1.010; // friction coefficient - divides the velocity of each particle by this every frame
+float b = 1.005; // friction coefficient - divides the velocity of each particle by this every frame
 
 
 // Gridding - allows collisionCheck with only the particles in the main particle's box and the ones surrounding that box
@@ -239,6 +239,7 @@ class Particle {
 
 // Main functions
 void initParticles(Particle[] particles) {
+  background(255);
   for (int i = 0; i < particles.length; i++) {
     Particle p = new Particle(i);
     particles[i] = p;
@@ -327,7 +328,7 @@ void friction(Particle[] particles) {
 void renderInstructions() {
   float x = 10;
   float y = height-textSize-15;
-  float w = textWidth("Click and drag the mouse"); // max text width
+  float w = textWidth("Click and drag the mouse rapidly"); // max text width
   float h = textSize*2+5;
 
   float a = 255-(millis()/10-500); // after 5 seconds, fade out the text background
@@ -336,7 +337,7 @@ void renderInstructions() {
   fill(255,constrain(a,0,255));
   rect(x-5,y-18,w+10,h+8,3); // offset from text position to create a rounded text box background
   fill(0);
-  text("Click and drag the mouse\nto create a color swirl.", x, y); // instructions (text wrapped)
+  text("Click and drag the mouse rapidly\nto create a color swirl. R to reset.", x, y); // instructions (text wrapped)
 }
 
 
@@ -371,6 +372,11 @@ void setup() {
 
 void draw() {
   // drawBackground(); // might help with clearing white dots - but not when tested, so not used
+
+  if (keyPressed && key == 'r') { // R key to reset
+    initParticles(particles);
+  }
+
   masterUpdate(particles);
   friction(particles);
   preventOutOfBounds(particles); // may remove later
